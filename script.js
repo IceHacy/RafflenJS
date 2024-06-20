@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
     const startButton = document.getElementById('startButton');
 
-    let dancers = [];
+    let dancers = [Winner, Quagmire, LoL];
     let waiting = true;
     let frame = 0;
 

@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('raffleCanvas');
     const ctx = canvas.getContext('2d');
     const startButton = document.getElementById('startButton');
+    const restartButton = document.getElementById('restartButton');
 
     let dancers = [];
     let waiting = true;
@@ -17,11 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
             this.lives = 3;
             this.image = image;
             this.flippedImage = flippedImage;
+            this.speed = 100;
         }
 
         update(deltaTime) {
-            this.x += Math.cos(this.direction) * deltaTime * 100;
-            this.y += Math.sin(this.direction) * deltaTime * 100;
+            this.x += Math.cos(this.direction) * deltaTime * this.speed;
+            this.y += Math.sin(this.direction) * deltaTime * this.speed;
 
             if (this.x < 0 || this.x > canvas.width - this.size) {
                 this.direction = Math.PI - this.direction;
@@ -36,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         draw(ctx) {
             let image = this.direction < Math.PI ? this.image : this.flippedImage;
-            ctx.drawImage(image, 0, 0, this.size, this.size, this.x, this.y, this.size, this.size);
+            ctx.drawImage(image, this.x, this.y, this.size, this.size);
             ctx.fillStyle = 'white';
             ctx.font = '16px Arial';
             ctx.textAlign = 'center';
@@ -95,9 +97,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        dancers = dancers.filter(dancer => dancer.lives > 0);
-        if (dancers.length === 1) {
-            winner = dancers[0].name;
+        dancers = dancers.filter(dancer => dancer.lives > 0 || dancer === winner);
+        if (dancers.length === 1 && !winner) {
+            winner = dancers[0];
+        }
+    }
+
+    function triggerRandomEvent() {
+        const eventChance = 0.1;
+        if (Math.random() < eventChance) {
+            const eventType = Math.floor(Math.random() * 2);
+            if (eventType === 0) {
+                dancers.forEach(dancer => {
+                    dancer.speed += 50;
+                });
+                console.log('Random Event: Speed Up');
+            } else if (eventType === 1) {
+                let newDancers = [];
+                dancers.forEach(dancer => {
+                    newDancers.push(new Dancer(dancer.name + " Clone", Math.random() * canvas.width, Math.random() * canvas.height, dancer.image, dancer.flippedImage));
+                });
+                dancers.push(...newDancers);
+                console.log('Random Event: Multiplying Dancers');
+            }
         }
     }
 
@@ -121,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillStyle = 'white';
             ctx.font = '30px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText(`Winner: ${winner}`, canvas.width / 2, canvas.height / 2);
+            ctx.fillText(`Winner: ${winner.name}`, canvas.width / 2, canvas.height / 2);
         }
     }
 
@@ -131,9 +153,22 @@ document.addEventListener('DOMContentLoaded', () => {
         lastTime = time;
         if (!waiting && !winner) {
             checkCollisions();
+            triggerRandomEvent();
         }
         render(deltaTime);
         requestAnimationFrame(gameLoop);
+    }
+
+    function resetGame() {
+        dancers = [];
+        winner = null;
+        waiting = true;
+        loadImages({
+            dancer: 'assets/dancer.png',
+            dancer_flipped: 'assets/dancer_flipped.png'
+        }, (images) => {
+            initDancers(images);
+        });
     }
 
     document.addEventListener('keydown', (e) => {
@@ -146,11 +181,8 @@ document.addEventListener('DOMContentLoaded', () => {
         waiting = false;
     });
 
-    loadImages({
-        dancer: 'assets/dancer.png',
-        dancer_flipped: 'assets/dancer_flipped.png'
-    }, (images) => {
-        initDancers(images);
-        requestAnimationFrame(gameLoop);
-    });
+    restartButton.addEventListener('click', resetGame);
+
+    resetGame();
+    requestAnimationFrame(gameLoop);
 });

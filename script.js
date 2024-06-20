@@ -5,12 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const restartButton = document.getElementById('restartButton');
 
     let dancers = [];
-    let explosions = [];
     let waiting = true;
     let winner = null;
     let eventTimer = 0;
-
-    const deathSound = new Audio('assets/death.mp3');
 
     class Dancer {
         constructor(name, x, y, image, flippedImage) {
@@ -18,17 +15,18 @@ document.addEventListener('DOMContentLoaded', () => {
             this.x = x;
             this.y = y;
             this.direction = Math.random() * 2 * Math.PI;
-            this.size = 48;
-            this.lives = 3;
+            this.size = 18;
+            this.lives = 10;
             this.image = image;
             this.flippedImage = flippedImage;
-            this.speed = 150;
+            this.speed = 150; // Initial speed
         }
 
         update(deltaTime) {
             this.x += Math.cos(this.direction) * this.speed * deltaTime;
             this.y += Math.sin(this.direction) * this.speed * deltaTime;
 
+            // Boundary check and reflection
             if (this.x < 0 || this.x > canvas.width - this.size) {
                 this.direction = Math.PI - this.direction;
                 this.x = Math.max(0, Math.min(this.x, canvas.width - this.size));
@@ -48,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.textAlign = 'center';
             ctx.fillText(`${this.name} (${this.lives})`, this.x + this.size / 2, this.y + this.size + 16);
 
-            ctx.fillStyle = 'red';
+            // Display health bar
+            ctx.fillStyle = 'white';
             ctx.fillRect(this.x, this.y + this.size + 25, this.size * (this.lives / 3), 5);
         }
 
@@ -59,29 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.y < other.y + other.size &&
                 this.y + this.size > other.y
             );
-        }
-    }
-
-    class Explosion {
-        constructor(x, y, image) {
-            this.x = x;
-            this.y = y;
-            this.image = image;
-            this.size = 48;
-            this.opacity = 1;
-        }
-
-        update(deltaTime) {
-            this.opacity -= deltaTime;
-            if (this.opacity < 0) {
-                this.opacity = 0;
-            }
-        }
-
-        draw(ctx) {
-            ctx.globalAlpha = this.opacity;
-            ctx.drawImage(this.image, this.x, this.y, this.size, this.size);
-            ctx.globalAlpha = 1;
         }
     }
 
@@ -120,42 +96,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function checkCollisions(images) {
+    function checkCollisions() {
         for (let i = 0; i < dancers.length; i++) {
             for (let j = i + 1; j < dancers.length; j++) {
                 if (dancers[i].collidesWith(dancers[j])) {
                     dancers[i].lives -= 1;
                     dancers[j].lives -= 1;
-
-                    if (dancers[i].lives <= 0) {
-                        deathSound.play();
-                        explosions.push(new Explosion(dancers[i].x, dancers[i].y, images.explosion));
-                    }
-
-                    if (dancers[j].lives <= 0) {
-                        deathSound.play();
-                        explosions.push(new Explosion(dancers[j].x, dancers[j].y, images.explosion));
-                    }
                 }
             }
         }
         dancers = dancers.filter(dancer => dancer.lives > 0 || dancer === winner);
-
         if (dancers.length === 1 && !winner) {
             winner = dancers[0];
-        } else if (dancers.length === 0) {
-            winner = 'tie';
         }
     }
 
     function triggerRandomEvent() {
         const event = Math.random();
         if (event < 0.1) {
+            // 10% chance to trigger an event
             const randomEvent = Math.random();
             if (randomEvent < 0.5) {
+                // 50% chance for "Dancer Speed Up"
                 dancers.forEach(dancer => dancer.speed *= 1.5);
                 console.log("Dancers speed up!");
             } else {
+                // 50% chance for "Multiplying of Dancers"
                 const newDancers = dancers.map(dancer => new Dancer(
                     dancer.name,
                     Math.random() * canvas.width,
@@ -176,27 +142,20 @@ document.addEventListener('DOMContentLoaded', () => {
             dancer.draw(ctx);
         });
 
-        explosions.forEach(explosion => {
-            explosion.update(deltaTime);
-            explosion.draw(ctx);
-        });
-
-        explosions = explosions.filter(explosion => explosion.opacity > 0);
-
         if (waiting) {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'white';
             ctx.font = '30px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('Press "Enter" to start.', canvas.width / 2, canvas.height / 2);
+            ctx.fillText('PRESS ENTER TO START', canvas.width / 2, canvas.height / 2);
         } else if (winner) {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'white';
             ctx.font = '30px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText(winner === 'tie' ? "It's a Tie!" : `Winner: ${winner.name}`, canvas.width / 2, canvas.height / 2);
+            ctx.fillText(`Winner: ${winner.name}`, canvas.width / 2, canvas.height / 2);
             restartButton.style.display = 'block';
         }
     }
@@ -206,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let deltaTime = (time - lastTime) / 1000;
         lastTime = time;
         if (!waiting && !winner) {
-            checkCollisions(images);
+            checkCollisions();
             eventTimer += deltaTime;
             if (eventTimer >= 10) {
                 triggerRandomEvent();
@@ -233,11 +192,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadImages({
         dancer: 'assets/dancer.png',
-        dancer_flipped: 'assets/dancer_flipped.png',
-        explosion: 'assets/explosion.png'
+        dancer_flipped: 'assets/dancer_flipped.png'
     }, (images) => {
-        initDancers(images).then(() => {
-            requestAnimationFrame(gameLoop);
-        });
+        initDancers(images);
+        requestAnimationFrame(gameLoop);
     });
 });

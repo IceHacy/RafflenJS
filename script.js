@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillStyle = 'white';
             ctx.font = '30px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('PRESS ENTER TO START', canvas.width / 2, canvas.height / 2);
+            ctx.fillText('Press "Enter" to start.', canvas.width / 2, canvas.height / 2);
         } else if (winner) {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);

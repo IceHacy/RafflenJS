@@ -62,31 +62,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     class Boss extends Dancer {
         constructor(x, y, image, flippedImage) {
-            super('', x, y, image, flippedImage);
+            super('Boss', x, y, image, flippedImage);
             this.speed = 300;
             this.lives = 5;
         }
 
         update(deltaTime) {
             if (dancers.length > 0) {
-                const target = dancers[0];
+                const target = dancers[Math.floor(Math.random() * dancers.length)];
                 const dx = target.x - this.x;
                 const dy = target.y - this.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
                 const direction = Math.atan2(dy, dx);
 
                 this.x += Math.cos(direction) * this.speed * deltaTime;
                 this.y += Math.sin(direction) * this.speed * deltaTime;
-            }
 
-            if (this.x < 0 || this.x > canvas.width - this.size) {
-                this.direction = Math.PI - this.direction;
-                this.x = Math.max(0, Math.min(this.x, canvas.width - this.size));
-            }
+                if (this.x < 0 || this.x > canvas.width - this.size) {
+                    this.direction = Math.PI - this.direction;
+                    this.x = Math.max(0, Math.min(this.x, canvas.width - this.size));
+                }
 
-            if (this.y < 0 || this.y > canvas.height - this.size) {
-                this.direction = -this.direction;
-                this.y = Math.max(0, Math.min(this.y, canvas.height - this.size));
+                if (this.y < 0 || this.y > canvas.height - this.size) {
+                    this.direction = -this.direction;
+                    this.y = Math.max(0, Math.min(this.y, canvas.height - this.size));
+                }
             }
         }
     }
@@ -233,7 +232,8 @@ document.addEventListener('DOMContentLoaded', () => {
         boss: 'assets/Chaser.png',
         boss_flipped: 'assets/Chaser_flipped.png'
     }, (images) => {
-        initDancers(images);
-        requestAnimationFrame(gameLoop);
+        initDancers(images).then(() => {
+            requestAnimationFrame(gameLoop);
+        });
     });
 });

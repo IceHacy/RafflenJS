@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let waiting = true;
     let winner = null;
     let eventTimer = 0;
+    let bossSpawned = false;
 
     class Dancer {
         constructor(name, x, y, image, flippedImage) {
@@ -19,14 +20,13 @@ document.addEventListener('DOMContentLoaded', () => {
             this.lives = 3;
             this.image = image;
             this.flippedImage = flippedImage;
-            this.speed = 150; // Initial speed
+            this.speed = 150;
         }
 
         update(deltaTime) {
             this.x += Math.cos(this.direction) * this.speed * deltaTime;
             this.y += Math.sin(this.direction) * this.speed * deltaTime;
 
-            // Boundary check and reflection
             if (this.x < 0 || this.x > canvas.width - this.size) {
                 this.direction = Math.PI - this.direction;
                 this.x = Math.max(0, Math.min(this.x, canvas.width - this.size));
@@ -39,14 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         draw(ctx) {
-            let image = this.direction < Math.PI ? this.image : this.flippedImage;
+            let image = this.direction < Math.PI? this.image : this.flippedImage;
             ctx.drawImage(image, this.x, this.y, this.size, this.size);
             ctx.fillStyle = 'white';
             ctx.font = '16px Arial';
             ctx.textAlign = 'center';
             ctx.fillText(`${this.name} (${this.lives})`, this.x + this.size / 2, this.y + this.size + 16);
 
-            // Display health bar
             ctx.fillStyle = 'red';
             ctx.fillRect(this.x, this.y + this.size + 25, this.size * (this.lives / 3), 5);
         }
@@ -58,6 +57,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.y < other.y + other.size &&
                 this.y + this.size > other.y
             );
+        }
+    }
+
+    class Boss extends Dancer {
+        constructor(x, y, image, flippedImage) {
+            super('', x, y, image, flippedImage);
+            this.speed = 300;
+            this.lives = 5;
+        }
+
+        update(deltaTime) {
+            if (dancers.length > 0) {
+                const target = dancers[0];
+                const dx = target.x - this.x;
+                const dy = target.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const direction = Math.atan2(dy, dx);
+
+                this.x += Math.cos(direction) * this.speed * deltaTime;
+                this.y += Math.sin(direction) * this.speed * deltaTime;
+            }
+
+            if (this.x < 0 || this.x > canvas.width - this.size) {
+                this.direction = Math.PI - this.direction;
+                this.x = Math.max(0, Math.min(this.x, canvas.width - this.size));
+            }
+
+            if (this.y < 0 || this.y > canvas.height - this.size) {
+                this.direction = -this.direction;
+                this.y = Math.max(0, Math.min(this.y, canvas.height - this.size));
+            }
         }
     }
 
@@ -106,7 +136,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         dancers = dancers.filter(dancer => dancer.lives > 0 || dancer === winner);
-        if (dancers.length === 1 && !winner) {
+
+        if (dancers.length === 10 &&bossSpawned) {
+            const bossX = Math.random() * (canvas.width - 48);
+            const bossY = Math.random() * (canvas.height - 48);
+            dancers.push(new Boss(bossX, bossY, images.boss, images.boss_flipped));
+            bossSpawned = true;
+        }
+
+        if (dancers.length === 1 &&winner) {
             winner = dancers[0];
         }
     }
@@ -114,14 +152,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function triggerRandomEvent() {
         const event = Math.random();
         if (event < 0.1) {
-            // 10% chance to trigger an event
             const randomEvent = Math.random();
             if (randomEvent < 0.5) {
-                // 50% chance for "Dancer Speed Up"
                 dancers.forEach(dancer => dancer.speed *= 1.5);
                 console.log("Dancers speed up!");
             } else {
-                // 50% chance for "Multiplying of Dancers"
                 const newDancers = dancers.map(dancer => new Dancer(
                     dancer.name,
                     Math.random() * canvas.width,
@@ -164,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function gameLoop(time) {
         let deltaTime = (time - lastTime) / 1000;
         lastTime = time;
-        if (!waiting && !winner) {
+        if (!waiting &&!winner) {
             checkCollisions();
             eventTimer += deltaTime;
             if (eventTimer >= 10) {
@@ -192,7 +227,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadImages({
         dancer: 'assets/dancer.png',
-        dancer_flipped: 'assets/dancer_flipped.png'
+        dancer_flipped: 'assets/dancer_flipped.png',
+        boss: 'assets/Chaser.png',
+        boss_flipped: 'assets/Chaser_flipped.png'
     }, (images) => {
         initDancers(images);
         requestAnimationFrame(gameLoop);

@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.lives = 3;
             this.image = image;
             this.flippedImage = flippedImage;
-            this.speed = 100; // Initial speed
+            this.speed = 150; // Initial speed
         }
 
         update(deltaTime) {

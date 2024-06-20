@@ -15,11 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
             this.x = x;
             this.y = y;
             this.direction = Math.random() * 2 * Math.PI;
-            this.size = 18;
+            this.size = 50;
             this.lives = 10;
             this.image = image;
             this.flippedImage = flippedImage;
-            this.speed = 150; // Initial speed
+            this.speed = 300; // Initial speed
         }
 
         update(deltaTime) {

@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadImages({
         dancer: 'assets/dancer.png',
         dancer_flipped: 'assets/dancer_flipped.png',
-        explosion: 'assets/explosion.gif'
+        explosion: 'assets/explosion.png'
     }, (images) => {
         initDancers(images).then(() => {
             requestAnimationFrame(gameLoop);

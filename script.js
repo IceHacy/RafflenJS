@@ -43,6 +43,10 @@ class Dancer {
         this.context.drawImage(this.image, this.x, this.y, this.size, this.size);
         this.context.fillStyle = 'white';
         this.context.fillText(this.name, this.x + this.size / 2, this.y - 10);
+        
+        // Display health at the bottom
+        this.context.fillStyle = 'red';
+        this.context.fillRect(this.x, this.y + this.size + 5, this.size * (this.hp / 3), 5);
     }
 
     checkCollision(otherDancer) {
@@ -60,7 +64,10 @@ class Dancer {
     }
 }
 
-let canvas = document.getElementById('raffleCanvas');
+let canvas = document.createElement('canvas');
+canvas.width = 1024;
+canvas.height = 600;
+document.body.appendChild(canvas);
 let context = canvas.getContext('2d');
 context.font = "16px Arial";
 context.textAlign = "center";
@@ -135,16 +142,4 @@ function gameLoop(timestamp) {
     }
 }
 
-document.getElementById('startButton').addEventListener('click', () => {
-    if (!animationFrameId) {
-        init();
-    }
-});
-
-document.getElementById('restartButton').addEventListener('click', () => {
-    cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
-    dancers = [];
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    init();
-});
+init();

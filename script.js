@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let dancers = [];
     let waiting = true;
-    let frame = 0;
     let winner = null;
 
     class Dancer {
@@ -14,45 +13,43 @@ document.addEventListener('DOMContentLoaded', () => {
             this.x = x;
             this.y = y;
             this.direction = Math.random() * 2 * Math.PI;
-            this.movementInterval = Math.random() * 3;
-            this.animationInterval = 0;
-            this.animationFrame = 0;
             this.size = 48;
+            this.lives = 3;
             this.image = image;
             this.flippedImage = flippedImage;
         }
 
         update(deltaTime) {
-            this.movementInterval -= deltaTime;
-            this.animationInterval += deltaTime;
-
-            if (this.movementInterval < 0) {
-                this.direction = Math.random() * 2 * Math.PI;
-                this.movementInterval = Math.random() * 3;
-            }
-
-            if (this.animationInterval > 0.1) {
-                this.animationFrame = (this.animationFrame + 1) % 4;  // Assuming 4 frames of animation
-                this.animationInterval = 0;
-            }
-
             this.x += Math.cos(this.direction) * deltaTime * 100;
             this.y += Math.sin(this.direction) * deltaTime * 100;
 
-            if (this.x < 0) this.x = 0;
-            if (this.x > canvas.width - this.size) this.x = canvas.width - this.size;
-            if (this.y < 0) this.y = 0;
-            if (this.y > canvas.height - this.size) this.y = canvas.height - this.size;
+            if (this.x < 0 || this.x > canvas.width - this.size) {
+                this.direction = Math.PI - this.direction;
+                this.x = Math.max(0, Math.min(this.x, canvas.width - this.size));
+            }
+
+            if (this.y < 0 || this.y > canvas.height - this.size) {
+                this.direction = -this.direction;
+                this.y = Math.max(0, Math.min(this.y, canvas.height - this.size));
+            }
         }
 
         draw(ctx) {
             let image = this.direction < Math.PI ? this.image : this.flippedImage;
-            let spriteX = this.animationFrame * this.size;
-            ctx.drawImage(image, spriteX, 0, this.size, this.size, this.x, this.y, this.size, this.size);
+            ctx.drawImage(image, 0, 0, this.size, this.size, this.x, this.y, this.size, this.size);
             ctx.fillStyle = 'white';
             ctx.font = '16px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText(this.name, this.x + this.size / 2, this.y + this.size + 16);
+            ctx.fillText(`${this.name} (${this.lives})`, this.x + this.size / 2, this.y + this.size + 16);
+        }
+
+        collidesWith(other) {
+            return (
+                this.x < other.x + other.size &&
+                this.x + this.size > other.x &&
+                this.y < other.y + other.size &&
+                this.y + this.size > other.y
+            );
         }
     }
 
@@ -89,10 +86,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function selectWinner() {
-        if (dancers.length > 0) {
-            const winnerIndex = Math.floor(Math.random() * dancers.length);
-            winner = dancers[winnerIndex].name;
+    function checkCollisions() {
+        for (let i = 0; i < dancers.length; i++) {
+            for (let j = i + 1; j < dancers.length; j++) {
+                if (dancers[i].collidesWith(dancers[j])) {
+                    dancers[i].lives -= 1;
+                    dancers[j].lives -= 1;
+                }
+            }
+        }
+        dancers = dancers.filter(dancer => dancer.lives > 0);
+        if (dancers.length === 1) {
+            winner = dancers[0].name;
         }
     }
 
@@ -124,6 +129,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function gameLoop(time) {
         let deltaTime = (time - lastTime) / 1000;
         lastTime = time;
+        if (!waiting && !winner) {
+            checkCollisions();
+        }
         render(deltaTime);
         requestAnimationFrame(gameLoop);
     }
@@ -131,13 +139,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             waiting = false;
-            selectWinner();
         }
     });
 
     startButton.addEventListener('click', () => {
         waiting = false;
-        selectWinner();
     });
 
     loadImages({

@@ -1,3 +1,4 @@
+
 body {
     display: flex;
     justify-content: center;
@@ -10,6 +11,8 @@ body {
 
 canvas {
     border: 1px solid #ccc;
+    background: url('assets/background.png') no-repeat center center;
+    background-size: cover;
 }
 
 #controls {

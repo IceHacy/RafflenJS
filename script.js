@@ -243,12 +243,15 @@ document.addEventListener('DOMContentLoaded', () => {
             dancer: 'assets/dancer.png',
             dancer_flipped: 'assets/dancer_flipped.png'
         }, (images) => {
-            initDancers(images);
-            playRandomMusic();
-            waiting = true;
-            restartTimeout = setTimeout(() => {
-                waiting = false;
-            }, 10000);
+            initDancers(images)
+               .then(() => {
+                    playRandomMusic();
+                    waiting = true;
+                    restartTimeout = setTimeout(() => {
+                        waiting = false;
+                    }, 10000);
+                })
+               .catch(console.error);
         });
     }
 
@@ -256,8 +259,11 @@ document.addEventListener('DOMContentLoaded', () => {
         dancer: 'assets/dancer.png',
         dancer_flipped: 'assets/dancer_flipped.png'
     }, (images) => {
-        initDancers(images);
-        playRandomMusic();
-        requestAnimationFrame(gameLoop);
+        initDancers(images)
+           .then(() => {
+                playRandomMusic();
+                requestAnimationFrame(gameLoop);
+            })
+           .catch(console.error);
     });
 });

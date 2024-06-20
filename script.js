@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         draw(ctx) {
-            let image = this.direction < Math.PI? this.image : this.flippedImage;
+            let image = this.direction < Math.PI ? this.image : this.flippedImage;
             ctx.drawImage(image, this.x, this.y, this.size, this.size);
             ctx.fillStyle = 'white';
             ctx.font = '16px Arial';
@@ -137,15 +137,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         dancers = dancers.filter(dancer => dancer.lives > 0 || dancer === winner);
 
-        if (dancers.length === 10 &&bossSpawned) {
+        if (dancers.length === 10 && !bossSpawned) {
             const bossX = Math.random() * (canvas.width - 48);
             const bossY = Math.random() * (canvas.height - 48);
             dancers.push(new Boss(bossX, bossY, images.boss, images.boss_flipped));
             bossSpawned = true;
         }
 
-        if (dancers.length === 1 &&winner) {
+        if (dancers.length === 1 && !winner) {
             winner = dancers[0];
+        } else if (dancers.length === 0) {
+            winner = 'tie';
         }
     }
 
@@ -190,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillStyle = 'white';
             ctx.font = '30px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText(`Winner: ${winner.name}`, canvas.width / 2, canvas.height / 2);
+            ctx.fillText(winner === 'tie' ? "It's a Tie!" : `Winner: ${winner.name}`, canvas.width / 2, canvas.height / 2);
             restartButton.style.display = 'block';
         }
     }
@@ -199,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function gameLoop(time) {
         let deltaTime = (time - lastTime) / 1000;
         lastTime = time;
-        if (!waiting &&!winner) {
+        if (!waiting && !winner) {
             checkCollisions();
             eventTimer += deltaTime;
             if (eventTimer >= 10) {

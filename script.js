@@ -3,9 +3,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
     const startButton = document.getElementById('startButton');
 
-    let dancers = [Winner, Quagmire, LoL];
+    let dancers = [];
     let waiting = true;
     let frame = 0;
+    let winner = null;
 
     class Dancer {
         constructor(name, x, y, image, flippedImage) {
@@ -15,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.direction = Math.random() * 2 * Math.PI;
             this.movementInterval = Math.random() * 3;
             this.animationInterval = 0;
-            this.animation = false;
+            this.animationFrame = 0;
             this.size = 48;
             this.image = image;
             this.flippedImage = flippedImage;
@@ -31,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (this.animationInterval > 0.1) {
-                this.animation = !this.animation;
+                this.animationFrame = (this.animationFrame + 1) % 4;  // Assuming 4 frames of animation
                 this.animationInterval = 0;
             }
 
@@ -46,7 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         draw(ctx) {
             let image = this.direction < Math.PI ? this.image : this.flippedImage;
-            ctx.drawImage(image, this.x, this.y, this.size, this.size);
+            let spriteX = this.animationFrame * this.size;
+            ctx.drawImage(image, spriteX, 0, this.size, this.size, this.x, this.y, this.size, this.size);
             ctx.fillStyle = 'white';
             ctx.font = '16px Arial';
             ctx.textAlign = 'center';
@@ -74,9 +76,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function initDancers(images) {
-        for (let i = 0; i < 100; i++) {
-            dancers.push(new Dancer(`Dancer ${i}`, Math.random() * canvas.width, Math.random() * canvas.height, images.dancer, images.dancer_flipped));
+    async function loadNames(url) {
+        const response = await fetch(url);
+        const text = await response.text();
+        return text.split('\n').map(name => name.trim()).filter(name => name.length > 0);
+    }
+
+    async function initDancers(images) {
+        const names = await loadNames('assets/names.txt');
+        for (let i = 0; i < names.length; i++) {
+            dancers.push(new Dancer(names[i], Math.random() * canvas.width, Math.random() * canvas.height, images.dancer, images.dancer_flipped));
+        }
+    }
+
+    function selectWinner() {
+        if (dancers.length > 0) {
+            const winnerIndex = Math.floor(Math.random() * dancers.length);
+            winner = dancers[winnerIndex].name;
         }
     }
 
@@ -86,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             dancer.update(deltaTime);
             dancer.draw(ctx);
         });
+
         if (waiting) {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -93,6 +110,13 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.font = '30px Arial';
             ctx.textAlign = 'center';
             ctx.fillText('PRESS ENTER TO START', canvas.width / 2, canvas.height / 2);
+        } else if (winner) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '30px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Winner: ${winner}`, canvas.width / 2, canvas.height / 2);
         }
     }
 
@@ -107,11 +131,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             waiting = false;
+            selectWinner();
         }
     });
 
     startButton.addEventListener('click', () => {
         waiting = false;
+        selectWinner();
     });
 
     loadImages({

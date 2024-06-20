@@ -5,10 +5,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const restartButton = document.getElementById('restartButton');
 
     let dancers = [];
+    let explosions = [];
     let waiting = true;
     let winner = null;
     let eventTimer = 0;
-    let bossSpawned = false;
+
+    const deathSound = new Audio('assets/death.mp3');
 
     class Dancer {
         constructor(name, x, y, image, flippedImage) {
@@ -60,33 +62,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    class Boss extends Dancer {
-        constructor(x, y, image, flippedImage) {
-            super('Boss', x, y, image, flippedImage);
-            this.speed = 300;
-            this.lives = 5;
+    class Explosion {
+        constructor(x, y, image) {
+            this.x = x;
+            this.y = y;
+            this.image = image;
+            this.size = 48;
+            this.opacity = 1;
         }
 
         update(deltaTime) {
-            if (dancers.length > 0) {
-                const target = dancers[Math.floor(Math.random() * dancers.length)];
-                const dx = target.x - this.x;
-                const dy = target.y - this.y;
-                const direction = Math.atan2(dy, dx);
-
-                this.x += Math.cos(direction) * this.speed * deltaTime;
-                this.y += Math.sin(direction) * this.speed * deltaTime;
-
-                if (this.x < 0 || this.x > canvas.width - this.size) {
-                    this.direction = Math.PI - this.direction;
-                    this.x = Math.max(0, Math.min(this.x, canvas.width - this.size));
-                }
-
-                if (this.y < 0 || this.y > canvas.height - this.size) {
-                    this.direction = -this.direction;
-                    this.y = Math.max(0, Math.min(this.y, canvas.height - this.size));
-                }
+            this.opacity -= deltaTime;
+            if (this.opacity < 0) {
+                this.opacity = 0;
             }
+        }
+
+        draw(ctx) {
+            ctx.globalAlpha = this.opacity;
+            ctx.drawImage(this.image, this.x, this.y, this.size, this.size);
+            ctx.globalAlpha = 1;
         }
     }
 
@@ -125,23 +120,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function checkCollisions() {
+    function checkCollisions(images) {
         for (let i = 0; i < dancers.length; i++) {
             for (let j = i + 1; j < dancers.length; j++) {
                 if (dancers[i].collidesWith(dancers[j])) {
                     dancers[i].lives -= 1;
                     dancers[j].lives -= 1;
+
+                    if (dancers[i].lives <= 0) {
+                        deathSound.play();
+                        explosions.push(new Explosion(dancers[i].x, dancers[i].y, images.explosion));
+                    }
+
+                    if (dancers[j].lives <= 0) {
+                        deathSound.play();
+                        explosions.push(new Explosion(dancers[j].x, dancers[j].y, images.explosion));
+                    }
                 }
             }
         }
         dancers = dancers.filter(dancer => dancer.lives > 0 || dancer === winner);
-
-        if (dancers.length === 10 && !bossSpawned) {
-            const bossX = Math.random() * (canvas.width - 48);
-            const bossY = Math.random() * (canvas.height - 48);
-            dancers.push(new Boss(bossX, bossY, images.boss, images.boss_flipped));
-            bossSpawned = true;
-        }
 
         if (dancers.length === 1 && !winner) {
             winner = dancers[0];
@@ -178,6 +176,13 @@ document.addEventListener('DOMContentLoaded', () => {
             dancer.draw(ctx);
         });
 
+        explosions.forEach(explosion => {
+            explosion.update(deltaTime);
+            explosion.draw(ctx);
+        });
+
+        explosions = explosions.filter(explosion => explosion.opacity > 0);
+
         if (waiting) {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -201,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let deltaTime = (time - lastTime) / 1000;
         lastTime = time;
         if (!waiting && !winner) {
-            checkCollisions();
+            checkCollisions(images);
             eventTimer += deltaTime;
             if (eventTimer >= 10) {
                 triggerRandomEvent();
@@ -229,8 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadImages({
         dancer: 'assets/dancer.png',
         dancer_flipped: 'assets/dancer_flipped.png',
-        boss: 'assets/Chaser.png',
-        boss_flipped: 'assets/Chaser_flipped.png'
+        explosion: 'assets/explosion.gif'
     }, (images) => {
         initDancers(images).then(() => {
             requestAnimationFrame(gameLoop);

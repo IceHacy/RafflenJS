@@ -7,14 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let dancers = [];
     let waiting = true;
     let winner = null;
-    let music = null;
-    let musicVolume = 0;
-
-    const musicFiles = [
-        'assets/music/bg1.mp3',
-        'assets/music/bg2.mp3',
-        'assets/music/bg3.mp3'
-    ];
+    let eventTimer = 0;
 
     class Dancer {
         constructor(name, x, y, image, flippedImage) {
@@ -26,12 +19,14 @@ document.addEventListener('DOMContentLoaded', () => {
             this.lives = 3;
             this.image = image;
             this.flippedImage = flippedImage;
+            this.speed = 100; // Initial speed
         }
 
         update(deltaTime) {
-            this.x += Math.cos(this.direction) * deltaTime * 100;
-            this.y += Math.sin(this.direction) * deltaTime * 100;
+            this.x += Math.cos(this.direction) * this.speed * deltaTime;
+            this.y += Math.sin(this.direction) * this.speed * deltaTime;
 
+            // Boundary check and reflection
             if (this.x < 0 || this.x > canvas.width - this.size) {
                 this.direction = Math.PI - this.direction;
                 this.x = Math.max(0, Math.min(this.x, canvas.width - this.size));
@@ -44,12 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         draw(ctx) {
-            let image = this.direction < Math.PI? this.image : this.flippedImage;
+            let image = this.direction < Math.PI ? this.image : this.flippedImage;
             ctx.drawImage(image, this.x, this.y, this.size, this.size);
             ctx.fillStyle = 'white';
             ctx.font = '16px Arial';
             ctx.textAlign = 'center';
             ctx.fillText(`${this.name} (${this.lives})`, this.x + this.size / 2, this.y + this.size + 16);
+
+            // Display health bar
+            ctx.fillStyle = 'red';
+            ctx.fillRect(this.x, this.y + this.size + 25, this.size * (this.lives / 3), 5);
         }
 
         collidesWith(other) {
@@ -65,12 +64,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function loadImages(sources, callback) {
         let images = {};
         let loadedImages = 0;
-        let numImages = Object.keys(sources).length;
+        let numImages = 0;
 
-        for (const src in sources) {
+        for (let src in sources) {
+            numImages++;
+        }
+
+        for (let src in sources) {
             images[src] = new Image();
-            images[src].onload = () => {
-                if (++loadedImages === numImages) {
+            images[src].onload = function () {
+                if (++loadedImages >= numImages) {
                     callback(images);
                 }
             };
@@ -86,77 +89,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function initDancers(images) {
         const names = await loadNames('assets/names.txt');
-        dancers = names.map(name => new Dancer(name, Math.random() * canvas.width, Math.random() * canvas.height, images.dancer, images.dancer_flipped));
-    }
-
-    function playRandomMusic() {
-        const randomIndex = Math.floor(Math.random() * musicFiles.length);
-        music = new Audio(musicFiles[randomIndex]);
-        music.loop = true;
-        music.volume = 0;
-        music.play();
-        fadeInMusic();
-    }
-
-    function fadeInMusic() {
-        const fadeInterval = setInterval(() => {
-            musicVolume += 0.05;
-            if (musicVolume >= 1) {
-                musicVolume = 1;
-                clearInterval(fadeInterval);
-            }
-            music.volume = musicVolume;
-        }, 200);
-    }
-
-    function stopMusic() {
-        if (!music) return;
-        fadeOutMusic();
-    }
-
-    function fadeOutMusic() {
-        const fadeInterval = setInterval(() => {
-            musicVolume -= 0.05;
-            if (musicVolume <= 0) {
-                musicVolume = 0;
-                music.pause();
-                clearInterval(fadeInterval);
-            }
-            music.volume = musicVolume;
-        }, 200);
+        for (let i = 0; i < names.length; i++) {
+            let x = Math.random() * (canvas.width - 48);
+            let y = Math.random() * (canvas.height - 48);
+            dancers.push(new Dancer(names[i], x, y, images.dancer, images.dancer_flipped));
+        }
     }
 
     function checkCollisions() {
-        dancers.forEach((dancer, i) => {
-            dancers.slice(i + 1).forEach(other => {
-                if (dancer.collidesWith(other)) {
-                    dancer.lives -= 1;
-                    other.lives -= 1;
+        for (let i = 0; i < dancers.length; i++) {
+            for (let j = i + 1; j < dancers.length; j++) {
+                if (dancers[i].collidesWith(dancers[j])) {
+                    dancers[i].lives -= 1;
+                    dancers[j].lives -= 1;
                 }
-            });
-        });
+            }
+        }
         dancers = dancers.filter(dancer => dancer.lives > 0 || dancer === winner);
-        if (dancers.length === 1 &&!winner) {
+        if (dancers.length === 1 && !winner) {
             winner = dancers[0];
-            setTimeout(() => {
-                restartGame();
-            }, 10000);
-        } else if (dancers.length === 0) {
-            winner = 'tie';
-            setTimeout(() => {
-                restartGame();
-            }, 10000);
         }
     }
 
     function triggerRandomEvent() {
         const event = Math.random();
         if (event < 0.1) {
+            // 10% chance to trigger an event
             const randomEvent = Math.random();
             if (randomEvent < 0.5) {
+                // 50% chance for "Dancer Speed Up"
                 dancers.forEach(dancer => dancer.speed *= 1.5);
                 console.log("Dancers speed up!");
             } else {
+                // 50% chance for "Multiplying of Dancers"
                 const newDancers = dancers.map(dancer => new Dancer(
                     dancer.name,
                     Math.random() * canvas.width,
@@ -190,11 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillStyle = 'white';
             ctx.font = '30px Arial';
             ctx.textAlign = 'center';
-            if (winner === 'tie') {
-                ctx.fillText(`It's a Tie`, canvas.width / 2, canvas.height / 2);
-            } else {
-                ctx.fillText(`Winner: ${winner.name}`, canvas.width / 2, canvas.height / 2);
-            }
+            ctx.fillText(`Winner: ${winner.name}`, canvas.width / 2, canvas.height / 2);
+            restartButton.style.display = 'block';
         }
     }
 
@@ -202,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function gameLoop(time) {
         let deltaTime = (time - lastTime) / 1000;
         lastTime = time;
-        if (!waiting &&!winner) {
+        if (!waiting && !winner) {
             checkCollisions();
             eventTimer += deltaTime;
             if (eventTimer >= 10) {
@@ -215,55 +177,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.type === 'click') {
+        if (e.key === 'Enter') {
             waiting = false;
-            playRandomMusic();
-            requestAnimationFrame(gameLoop);
         }
     });
 
     startButton.addEventListener('click', () => {
         waiting = false;
-        playRandomMusic();
-        requestAnimationFrame(gameLoop);
     });
 
     restartButton.addEventListener('click', () => {
-        clearTimeout(restartTimeout);
-        restartGame();
+        location.reload();
     });
-
-    let restartTimeout;
-    function restartGame() {
-        winner = null;
-        dancers = [];
-        music.pause();
-        stopMusic();
-        loadImages({
-            dancer: 'assets/dancer.png',
-            dancer_flipped: 'assets/dancer_flipped.png'
-        }, (images) => {
-            initDancers(images)
-               .then(() => {
-                    playRandomMusic();
-                    waiting = true;
-                    restartTimeout = setTimeout(() => {
-                        waiting = false;
-                    }, 10000);
-                })
-               .catch(console.error);
-        });
-    }
 
     loadImages({
         dancer: 'assets/dancer.png',
         dancer_flipped: 'assets/dancer_flipped.png'
     }, (images) => {
-        initDancers(images)
-           .then(() => {
-                playRandomMusic();
-                requestAnimationFrame(gameLoop);
-            })
-           .catch(console.error);
+        initDancers(images);
+        requestAnimationFrame(gameLoop);
     });
 });

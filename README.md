@@ -8,7 +8,7 @@ https://blithwin.itch.io/rafflen
 
 NOTE: this version sucks (i barely know js)
 
-(June) 06/21/24
+ # (June) 06/21/24
 - Might be the last update
 - Made a change to the Waiting screen.
 - Added more names

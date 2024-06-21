@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.x = x;
             this.y = y;
             this.direction = Math.random() * 2 * Math.PI;
-            this.size = 50;
+            this.size = 38;
             this.lives = 10;
             this.image = image;
             this.flippedImage = flippedImage;
@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function triggerRandomEvent() {
         const event = Math.random();
-        if (event < 0.1) {
+        if (event < 80) {
             // 10% chance to trigger an event
             const randomEvent = Math.random();
             if (randomEvent < 0.5) {
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillStyle = 'white';
             ctx.font = '30px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('PRESS ENTER TO START', canvas.width / 2, canvas.height / 2);
+            ctx.fillText('Press "Enter" to start.', canvas.width / 2, canvas.height / 2);
         } else if (winner) {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
